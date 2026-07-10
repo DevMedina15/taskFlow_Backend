@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: taskflow
+  profiles:
+    active: dev
+  config:
+    import: optional:file:.env[.properties]
+
+server:
+  port: 8080

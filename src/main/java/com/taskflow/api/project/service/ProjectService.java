@@ -5,15 +5,12 @@ import com.taskflow.api.project.dto.ProjectResponseDto;
 import com.taskflow.api.project.entity.Project;
 import com.taskflow.api.project.entity.ProjectMember;
 import com.taskflow.api.project.entity.ProjectRole;
-import com.taskflow.api.project.entity.ProjectStatus;
 import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
 import com.taskflow.api.user.UserRepository;
 import com.taskflow.api.user.entity.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +31,7 @@ public class ProjectService {
         String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User currentUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado en la base de datos"));
 
         String finalCode;
         boolean isCodeExist;
@@ -74,38 +71,5 @@ public class ProjectService {
 
     private String generateProjectCode() {
         return "PROJ-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ProjectResponseDto> getUserProjects (
-            ProjectRole role,
-            ProjectStatus status,
-            String search,
-            Pageable pageable ) {
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser  = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        String searchParam = (search != null && !search.trim().isEmpty())
-                ? "%" + search.toLowerCase() + "%"
-                : null;
-
-        Page<Project> projectPage = projectRepository.findUserProjectsWithFilters(
-                currentUser.getId(),
-                role,
-                status,
-                searchParam,
-                pageable
-        );
-
-        return projectPage.map(project -> new ProjectResponseDto(
-                project.getId(),
-                project.getCode(),
-                project.getName(),
-                project.getDescription(),
-                project.getOrganizationName(),
-                project.getStatus(),
-                project.getCreatedAt()
-        ));
     }
 }

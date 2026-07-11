@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
@@ -33,4 +34,8 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             @Param("search") String search,
             Pageable pageable
     );
+
+
+    @Query("SELECT pm.role FROM ProjectMember pm WHERE pm.project.id = :projectId AND pm.user.id = :userId")
+    Optional<ProjectRole> findRoleByProjectAndUser(@Param("projectId") UUID projectId, @Param("userId") UUID userId);
 }

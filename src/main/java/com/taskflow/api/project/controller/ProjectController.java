@@ -2,6 +2,7 @@ package com.taskflow.api.project.controller;
 
 import com.taskflow.api.project.dto.CreateProjectRequestDto;
 import com.taskflow.api.project.dto.ProjectResponseDto;
+import com.taskflow.api.project.dto.UpdateProjectRequestDto;
 import com.taskflow.api.project.entity.ProjectRole;
 import com.taskflow.api.project.entity.ProjectStatus;
 import com.taskflow.api.project.service.ProjectService;
@@ -15,6 +16,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -54,6 +57,21 @@ public class ProjectController {
                 !page.isLast()
         );
         return ResponseEntity.ok(cleanResponse);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProjectResponseDto> updateProject
+            (@PathVariable UUID id,
+             @Valid @RequestBody UpdateProjectRequestDto request
+    ) {
+        ProjectResponseDto updatedProject = projectService.updateProject(id, request);
+        return ResponseEntity.ok(updatedProject);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
+        projectService.deleteProject(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

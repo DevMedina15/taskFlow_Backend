@@ -2,6 +2,7 @@ package com.taskflow.api.task.entity;
 
 import com.taskflow.api.project.entity.Project;
 import com.taskflow.api.shared.entity.BaseEntity;
+import com.taskflow.api.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,14 @@ public class Task extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignee_id")
+    private User assignee;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewer_id")
+    private User reviewer;
 
     @Column(length = 255 ,nullable = false)
     private String title;

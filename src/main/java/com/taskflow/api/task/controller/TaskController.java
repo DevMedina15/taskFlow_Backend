@@ -39,14 +39,16 @@ public class TaskController {
 
             @PathVariable UUID projectId,
             @RequestParam(required = false) TaskPriority priority,
-            @RequestParam(required = false) UUID assignedUserId,
+            @RequestParam(required = false, defaultValue = "false") boolean myTasks,
+            @RequestParam(required = false, defaultValue = "false") boolean myReviews,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
 
         Page<TaskResponseDto> page = taskService.getTaskWithFilters(
                 projectId,
                 priority,
-                assignedUserId,
+                myTasks,
+                myReviews,
                 pageable
         );
 

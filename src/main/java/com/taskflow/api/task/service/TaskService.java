@@ -8,8 +8,11 @@ import com.taskflow.api.task.dto.TaskResponseDto;
 import com.taskflow.api.task.entity.Task;
 import com.taskflow.api.task.entity.TaskPriority;
 import com.taskflow.api.task.repository.TaskRepository;
+import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public TaskResponseDto createTask (UUID projectId, CreateTaskRequestDto request) {
@@ -60,8 +64,11 @@ public class TaskService {
     public Page<TaskResponseDto> getTaskWithFilters (
             UUID projectId,
             TaskPriority priority,
-            UUID assignedUserId,
+            boolean myTasks,
+            boolean myReviews,
             Pageable pageable) {
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
 
         boolean projectExist = projectRepository.existsById(projectId);
 
@@ -69,7 +76,26 @@ public class TaskService {
             throw new ResourceNotFoundException("Proyecto no encontrado");
         }
 
-        Page<Task> taskPage = taskRepository.findTasksWithFilter(projectId, priority, assignedUserId, pageable);
+        UUID searchAssigneeId = null;
+        UUID searchReviewerId = null;
+
+        if (myTasks || myReviews) {
+            User currentUser = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+            if (myTasks) {
+                searchAssigneeId = currentUser.getId();
+            }
+            if (myReviews) {
+                searchReviewerId = currentUser.getId();
+            }
+        }
+
+        Page<Task> taskPage = taskRepository.findTasksWithFilter(
+                projectId,
+                priority,
+                searchAssigneeId,
+                searchReviewerId,
+                pageable);
 
         return taskPage.map(task -> new TaskResponseDto(
                 task.getId(),

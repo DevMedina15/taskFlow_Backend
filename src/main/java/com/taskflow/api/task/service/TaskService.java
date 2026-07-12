@@ -1,7 +1,9 @@
 package com.taskflow.api.task.service;
 
 import com.taskflow.api.project.entity.Project;
+import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
+import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
 import com.taskflow.api.task.dto.CreateTaskRequestDto;
 import com.taskflow.api.task.dto.TaskResponseDto;
@@ -26,6 +28,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
     public TaskResponseDto createTask (UUID projectId, CreateTaskRequestDto request) {
@@ -37,27 +40,29 @@ public class TaskService {
                 .project(project)
                 .title(request.title())
                 .description(request.description())
+                .status(request.status() != null ? request.status() : com.taskflow.api.task.entity.TaskStatus.TO_DO)
+                .priority(request.priority() != null ? request.priority() : TaskPriority.LOW)
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .estimatedTime(request.estimatedTime())
                 .gitBranch(request.gitBranch())
                 .build();
 
+        if (request.assigneeId() != null) {
+            validateProjectMember(projectId, request.assigneeId(), "El usuario asignado");
+            newTask.setAssignee(userRepository.getReferenceById(request.assigneeId()));
+        }
+
+        if (request.reviewerId() != null) {
+            validateProjectMember(projectId, request.reviewerId(), "El revisor");
+            newTask.setReviewer(userRepository.getReferenceById(request.reviewerId()));
+        }
+
+
+
         Task savedTask = taskRepository.save(newTask);
 
-        return new TaskResponseDto(
-                savedTask.getId(),
-                savedTask.getTitle(),
-                savedTask.getDescription(),
-                savedTask.getStatus(),
-                savedTask.getPriority(),
-                savedTask.getStartDate(),
-                savedTask.getEndDate(),
-                savedTask.getEstimatedTime(),
-                savedTask.getGitBranch(),
-                savedTask.getCreatedAt()
-
-        );
+        return mapToResponseDto(savedTask);
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +102,19 @@ public class TaskService {
                 searchReviewerId,
                 pageable);
 
-        return taskPage.map(task -> new TaskResponseDto(
+        return taskPage.map(this::mapToResponseDto);
+
+    }
+
+    private void validateProjectMember(UUID projectId, UUID userId, String errorPrefix) {
+        boolean isMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
+        if (!isMember) {
+            throw new BusinessRuleException(errorPrefix + " no pertenece a este proyecto");
+        }
+    }
+
+    private TaskResponseDto mapToResponseDto(Task task) {
+        return new TaskResponseDto(
                 task.getId(),
                 task.getTitle(),
                 task.getDescription(),
@@ -107,8 +124,9 @@ public class TaskService {
                 task.getEndDate(),
                 task.getEstimatedTime(),
                 task.getGitBranch(),
+                task.getAssignee() != null ? task.getAssignee().getId() : null,
+                task.getReviewer() != null ? task.getReviewer().getId() : null,
                 task.getCreatedAt()
-        ));
-
+        );
     }
 }

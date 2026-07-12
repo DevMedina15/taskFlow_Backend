@@ -16,6 +16,8 @@ public record TaskResponseDto(
         LocalDateTime endDate,
         Integer estimatedTime,
         String gitBranch,
+        UUID assigneeId,
+        UUID reviewerId,
         LocalDateTime createdAt
 ) {
 }

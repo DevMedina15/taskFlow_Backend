@@ -3,6 +3,7 @@ package com.taskflow.api.task.controller;
 import com.taskflow.api.shared.dto.PageResponseDto;
 import com.taskflow.api.task.dto.CreateTaskRequestDto;
 import com.taskflow.api.task.dto.TaskResponseDto;
+import com.taskflow.api.task.dto.UpdateTaskRequestDto;
 import com.taskflow.api.task.entity.TaskPriority;
 import com.taskflow.api.task.service.TaskService;
 import jakarta.validation.Valid;
@@ -32,6 +33,16 @@ public class TaskController {
         TaskResponseDto response = taskService.createTask(projectId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
+    }
+
+    @PutMapping("/{projectId}/tasks/{taskId}")
+    public ResponseEntity<TaskResponseDto> updateTask (
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId,
+            @Valid @RequestBody UpdateTaskRequestDto request
+    ) {
+        TaskResponseDto response = taskService.updateTask(projectId, taskId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/{projectId}/tasks")

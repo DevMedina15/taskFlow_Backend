@@ -7,6 +7,7 @@ import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
 import com.taskflow.api.task.dto.CreateTaskRequestDto;
 import com.taskflow.api.task.dto.TaskResponseDto;
+import com.taskflow.api.task.dto.UpdateTaskRequestDto;
 import com.taskflow.api.task.entity.Task;
 import com.taskflow.api.task.entity.TaskPriority;
 import com.taskflow.api.task.repository.TaskRepository;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -40,6 +42,8 @@ public class TaskService {
         project.setCurrentSequenceTask(newSequence);
 
         String generatedCode = project.getProjectKey() + "-" + newSequence;
+
+        this.validateDates(request.startDate(), request.endDate());
 
         Task newTask = Task.builder()
                 .project(project)
@@ -70,6 +74,48 @@ public class TaskService {
 
         return mapToResponseDto(savedTask);
     }
+
+
+    @Transactional
+    public TaskResponseDto updateTask (UUID projectId, UUID taskId, UpdateTaskRequestDto request) {
+        Task  task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarea no encontrada"));
+
+        if (!task.getProject().getId().equals(projectId)) {
+            throw new BusinessRuleException("La tarea no pertenece  al proyecto especificado");
+        }
+
+        this.validateDates(request.startDate(), request.endDate());
+
+        task.setTitle(request.title());
+        task.setDescription(request.description());
+        task.setStatus(request.status());
+        task.setPriority(request.priority());
+        task.setStartDate(request.startDate());
+        task.setEndDate(request.endDate());
+        task.setEstimatedTime(request.estimatedTime());
+        task.setGitBranch(request.gitBranch());
+        if (request.assigneeId() != null) {
+            validateProjectMember(projectId, request.assigneeId(), "El usuario asignado");
+            task.setAssignee(userRepository.getReferenceById(request.assigneeId()));
+        } else{
+            task.setAssignee(null);
+        }
+
+        if (request.reviewerId() != null) {
+            validateProjectMember(projectId, request.reviewerId(), "El revisor");
+            task.setReviewer(userRepository.getReferenceById(request.reviewerId()));
+        }else{
+            task.setReviewer(null);
+        }
+
+        Task taskUpdate =  taskRepository.save(task);
+
+        return mapToResponseDto(taskUpdate);
+
+    }
+
+
 
     @Transactional(readOnly = true)
     public Page<TaskResponseDto> getTaskWithFilters (
@@ -116,6 +162,14 @@ public class TaskService {
         boolean isMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
         if (!isMember) {
             throw new BusinessRuleException(errorPrefix + " no pertenece a este proyecto");
+        }
+    }
+
+    private void validateDates(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate != null && endDate != null) {
+            if (endDate.isBefore(startDate)) {
+                throw new BusinessRuleException("La fecha de finalización no puede ser menor a la fecha de inicio");
+            }
         }
     }
 

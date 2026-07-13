@@ -51,6 +51,7 @@ public class ProjectService {
                 .name(request.name())
                 .description(request.description())
                 .organizationName(request.organizationName().toUpperCase())
+                .projectKey(request.projectKey().toUpperCase())
                 .build();
 
         projectRepository.save(newProject);
@@ -69,6 +70,7 @@ public class ProjectService {
                 newProject.getName(),
                 newProject.getDescription(),
                 newProject.getOrganizationName(),
+                newProject.getProjectKey(),
                 newProject.getStatus(),
                 newProject.getCreatedAt()
         );
@@ -106,6 +108,7 @@ public class ProjectService {
                 project.getName(),
                 project.getDescription(),
                 project.getOrganizationName(),
+                project.getProjectKey(),
                 project.getStatus(),
                 project.getCreatedAt()
         ));
@@ -132,6 +135,7 @@ public class ProjectService {
                 updatedProject.getName(),
                 updatedProject.getDescription(),
                 updatedProject.getOrganizationName(),
+                updatedProject.getProjectKey(),
                 updatedProject.getStatus(),
                 updatedProject.getCreatedAt()
         );

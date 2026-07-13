@@ -9,6 +9,7 @@ import java.util.UUID;
 public record TaskResponseDto(
         UUID id,
         String title,
+        String code,
         String description,
         TaskStatus status,
         TaskPriority priority,

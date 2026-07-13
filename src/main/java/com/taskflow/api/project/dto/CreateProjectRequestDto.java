@@ -11,6 +11,9 @@ public record CreateProjectRequestDto(
         String description,
         @NotBlank(message = "La organizacion es obligatoria")
         @Size(max = 50, message = "El nombre de la organizacion no puede exceder los 50 caracteres")
-        String organizationName
+        String organizationName,
+        @NotBlank(message = "La llave es obligatoria para la creacion de tareas")
+        @Size(max = 5, message = "La llave solo debe tene maximo 5 caracteres")
+        String projectKey
 ) {
 }

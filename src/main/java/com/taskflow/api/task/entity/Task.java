@@ -32,6 +32,9 @@ public class Task extends BaseEntity {
     @Column(length = 255 ,nullable = false)
     private String title;
 
+    @Column(nullable = false, length = 100, unique = true)
+    private String code;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

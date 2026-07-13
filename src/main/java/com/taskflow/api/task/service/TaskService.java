@@ -36,9 +36,15 @@ public class TaskService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Proyecto no encontrado"));
 
+        int newSequence = project.getCurrentSequenceTask() + 1;
+        project.setCurrentSequenceTask(newSequence);
+
+        String generatedCode = project.getProjectKey() + "-" + newSequence;
+
         Task newTask = Task.builder()
                 .project(project)
                 .title(request.title())
+                .code(generatedCode)
                 .description(request.description())
                 .status(request.status() != null ? request.status() : com.taskflow.api.task.entity.TaskStatus.TO_DO)
                 .priority(request.priority() != null ? request.priority() : TaskPriority.LOW)
@@ -117,6 +123,7 @@ public class TaskService {
         return new TaskResponseDto(
                 task.getId(),
                 task.getTitle(),
+                task.getCode(),
                 task.getDescription(),
                 task.getStatus(),
                 task.getPriority(),

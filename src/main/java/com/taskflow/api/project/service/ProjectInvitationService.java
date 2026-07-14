@@ -2,14 +2,14 @@ package com.taskflow.api.project.service;
 
 import com.taskflow.api.project.dto.ProjectInvitationEmailEvent;
 import com.taskflow.api.project.dto.ProjectInvitationVerifyResponseDto;
-import com.taskflow.api.project.entity.InvitationStatus;
-import com.taskflow.api.project.entity.Project;
-import com.taskflow.api.project.entity.ProjectInvitation;
-import com.taskflow.api.project.entity.ProjectRole;
+import com.taskflow.api.project.entity.*;
 import com.taskflow.api.project.repository.ProjectInvitationRepository;
+import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
 import com.taskflow.api.shared.config.RabbitMQConfig;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
+import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -25,6 +25,8 @@ public class ProjectInvitationService {
     private final ProjectInvitationRepository invitationRepository;
     private final ProjectRepository projectRepository;
     private final RabbitTemplate rabbitTemplate; // El motor que Spring nos da para hablar con RabbitMQ
+    private final UserRepository userRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
     public void inviteUser(UUID projectId, String guestEmail, ProjectRole role) {
@@ -87,5 +89,38 @@ public class ProjectInvitationService {
                 invitation.getRole().name(),
                 invitation.getGuestEmail()
         );
+    }
+
+    @Transactional
+    public void acceptInvitation(String token, String currentUserEmail) {
+        ProjectInvitation invitation = invitationRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token de invitación inválido o no encontrado"));
+
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new RuntimeException("Esta invitación ya fue procesada o ha expirado.");
+        }
+
+        if (invitation.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("El enlace de invitación ha caducado.");
+        }
+
+        if (!invitation.getGuestEmail().equalsIgnoreCase(currentUserEmail)) {
+            throw new RuntimeException("No estás autorizado. El correo de la invitación no coincide con tu cuenta.");
+        }
+
+        invitation.setStatus(InvitationStatus.ACCEPTED);
+        invitationRepository.save(invitation);
+
+        User user = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado en el sistema."));
+
+
+        ProjectMember newMember = ProjectMember.builder()
+                .project(invitation.getProject())
+                .user(user)
+                .role(invitation.getRole())
+                .build();
+
+        projectMemberRepository.save(newMember);
     }
 }

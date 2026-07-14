@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.UUID;
 
 @RestController
@@ -35,5 +36,15 @@ public class ProjectInvitationController {
     public ResponseEntity<ProjectInvitationVerifyResponseDto> verifyToken(@RequestParam String token) {
         ProjectInvitationVerifyResponseDto response = invitationService.verifyInvitationToken(token);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/invitations/accept")
+    public ResponseEntity<Void> acceptInvitation(
+            @RequestParam String token,
+            Principal principal
+    ) {
+        String currentUserEmail = principal.getName();
+        invitationService.acceptInvitation(token, currentUserEmail);
+        return ResponseEntity.ok().build();
     }
 }

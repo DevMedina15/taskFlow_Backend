@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.UUID;
 
 @RestController
@@ -42,8 +43,8 @@ public class TaskController {
             @PathVariable UUID taskId,
             @Valid @RequestBody UpdateTaskRequestDto request
     ) {
-        TaskResponseDto response = taskService.updateTask(projectId, taskId, request);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        TaskResponseDto updatedTask = taskService.updateTask(projectId, taskId, request);
+        return ResponseEntity.ok(updatedTask);
     }
 
     @GetMapping("/{projectId}/tasks")
@@ -53,15 +54,18 @@ public class TaskController {
             @RequestParam(required = false) TaskPriority priority,
             @RequestParam(required = false, defaultValue = "false") boolean myTasks,
             @RequestParam(required = false, defaultValue = "false") boolean myReviews,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Principal principal
     ) {
+        String currentUserEmail = principal.getName();
 
         Page<TaskResponseDto> page = taskService.getTaskWithFilters(
                 projectId,
                 priority,
                 myTasks,
                 myReviews,
-                pageable
+                pageable,
+                currentUserEmail
         );
 
         PageResponseDto<TaskResponseDto> cleanResponse = new PageResponseDto<>(
@@ -89,9 +93,11 @@ public class TaskController {
     @DeleteMapping("/{projectId}/tasks/{taskId}")
     public ResponseEntity<Void> deleteTask(
             @PathVariable UUID projectId,
-            @PathVariable UUID taskId
+            @PathVariable UUID taskId,
+            Principal principal
     ) {
-        taskService.deleteById(projectId, taskId);
+        String currentUserEmail = principal.getName();
+        taskService.deleteById(projectId, taskId, currentUserEmail);
         return ResponseEntity.noContent().build();
     }
 

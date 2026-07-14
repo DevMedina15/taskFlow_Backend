@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,8 +27,12 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<ProjectResponseDto> createProject(@Valid @RequestBody CreateProjectRequestDto request) {
-        ProjectResponseDto response = projectService.createProject(request);
+    public ResponseEntity<ProjectResponseDto> createProject(
+            @Valid @RequestBody CreateProjectRequestDto request,
+            Principal principal)
+    {
+        String currentUserEmail = principal.getName();
+        ProjectResponseDto response = projectService.createProject(request, currentUserEmail);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -37,14 +42,17 @@ public class ProjectController {
             @RequestParam(required = false) ProjectRole role,
             @RequestParam(required = false)ProjectStatus status,
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Principal principal)
+    {
+        String currentUserEmail = principal.getName();
 
-            ) {
         Page<ProjectResponseDto> page = projectService.getUserProjects(
                 role,
                 status,
                 search,
-                pageable
+                pageable,
+                currentUserEmail
         );
 
         PageResponseDto<ProjectResponseDto> cleanResponse = new PageResponseDto<>(
@@ -68,8 +76,13 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
-        projectService.deleteProject(id);
+    public ResponseEntity<Void> deleteProject(
+            @PathVariable UUID id,
+            Principal principal
+    )
+    {
+        String currentUserEmail = principal.getName();
+        projectService.deleteProject(id, currentUserEmail);
         return ResponseEntity.noContent().build();
     }
 

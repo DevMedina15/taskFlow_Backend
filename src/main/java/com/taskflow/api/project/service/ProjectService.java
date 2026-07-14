@@ -36,8 +36,7 @@ public class ProjectService {
 
 
     @Transactional
-    public ProjectResponseDto createProject(CreateProjectRequestDto request) {
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+    public ProjectResponseDto createProject(CreateProjectRequestDto request, String userEmail) {
 
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
@@ -89,8 +88,10 @@ public class ProjectService {
             ProjectRole role,
             ProjectStatus status,
             String search,
-            Pageable pageable ) {
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            Pageable pageable,
+            String userEmail)
+    {
+
         User currentUser  = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
@@ -146,9 +147,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public void deleteProject(UUID projectId) {
-
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+    public void deleteProject(UUID projectId, String userEmail) {
 
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));

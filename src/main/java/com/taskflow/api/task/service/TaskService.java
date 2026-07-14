@@ -18,7 +18,6 @@ import com.taskflow.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -124,9 +123,8 @@ public class TaskService {
             TaskPriority priority,
             boolean myTasks,
             boolean myReviews,
-            Pageable pageable) {
-
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            Pageable pageable,
+            String userEmail) {
 
         boolean projectExist = projectRepository.existsById(projectId);
 
@@ -173,9 +171,7 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteById (UUID projectId, UUID taskId) {
-
-        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+    public void deleteById (UUID projectId, UUID taskId, String userEmail) {
 
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
@@ -197,6 +193,7 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
+    @Transactional
     public TaskResponseDto updateTaskStatus( UUID projectId, UUID taskId, ChangeTaskStatusRequestDto request ) {
 
         Task task = taskRepository.findById(taskId)

@@ -17,15 +17,14 @@ public class InvitationCleanupScheduler {
 
     private final ProjectInvitationRepository invitationRepository;
 
-    // Se ejecuta automáticamente cada hora en punto
+    // Ejecucion cada hora
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void cleanExpiredInvitations() {
         log.info("Cron Job: Iniciando limpieza automática de invitaciones vencidas...");
 
-        // Modificamos en lote todas las filas que ya caducaron
         int modifiedRows = invitationRepository.expireOldInvitations(
-                InvitationStatus.EXPIRED,  // Cambiar a CANCELLED si así se llama en tu Enum
+                InvitationStatus.EXPIRED,
                 InvitationStatus.PENDING,
                 LocalDateTime.now()
         );

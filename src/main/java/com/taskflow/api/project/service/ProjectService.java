@@ -1,6 +1,7 @@
 package com.taskflow.api.project.service;
 
 import com.taskflow.api.project.dto.CreateProjectRequestDto;
+import com.taskflow.api.project.dto.ProjectMemberResponseDto;
 import com.taskflow.api.project.dto.ProjectResponseDto;
 import com.taskflow.api.project.dto.UpdateProjectRequestDto;
 import com.taskflow.api.project.entity.Project;
@@ -20,7 +21,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -157,5 +160,20 @@ public class ProjectService {
         }
 
         projectRepository.deleteById(projectId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectMemberResponseDto> getProjectMembers(UUID projectId) {
+
+        List<ProjectMember> members = projectMemberRepository.findAllByProjectId(projectId);
+
+        return members.stream()
+                .map(member -> new ProjectMemberResponseDto(
+                        member.getUser().getId(),
+                        member.getUser().getEmail(),
+                        member.getRole().name(),
+                        member.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,7 @@
 package com.taskflow.api.project.controller;
 
 import com.taskflow.api.project.dto.CreateProjectRequestDto;
+import com.taskflow.api.project.dto.ProjectMemberResponseDto;
 import com.taskflow.api.project.dto.ProjectResponseDto;
 import com.taskflow.api.project.dto.UpdateProjectRequestDto;
 import com.taskflow.api.project.entity.ProjectRole;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -72,6 +74,12 @@ public class ProjectController {
     public ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{projectId}/members")
+    public ResponseEntity<List<ProjectMemberResponseDto>> getProjectMembers(@PathVariable UUID projectId) {
+        List<ProjectMemberResponseDto> members = projectService.getProjectMembers(projectId);
+        return ResponseEntity.ok(members);
     }
 
 }

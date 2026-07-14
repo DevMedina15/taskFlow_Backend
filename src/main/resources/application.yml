@@ -10,5 +10,6 @@ spring:
       pageable:
         one-indexed-parameters: true
 
+
 server:
   port: 8080

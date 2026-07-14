@@ -1,6 +1,7 @@
 package com.taskflow.api.project.controller;
 
 import com.taskflow.api.project.dto.InviteUserRequestDto;
+import com.taskflow.api.project.dto.ProjectInvitationVerifyResponseDto;
 import com.taskflow.api.project.service.ProjectInvitationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,5 +28,12 @@ public class ProjectInvitationController {
 
         // Retornamos un HTTP 201 Created sin cuerpo, ya que la acción se completó con éxito
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // Endpoint sin autenticacion para la hora de la invitacion se pueda ver al darle click en el front
+    @GetMapping("/verify")
+    public ResponseEntity<ProjectInvitationVerifyResponseDto> verifyToken(@RequestParam String token) {
+        ProjectInvitationVerifyResponseDto response = invitationService.verifyInvitationToken(token);
+        return ResponseEntity.ok(response);
     }
 }

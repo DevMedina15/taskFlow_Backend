@@ -1,6 +1,7 @@
 package com.taskflow.api.project.service;
 
 import com.taskflow.api.project.dto.ProjectInvitationEmailEvent;
+import com.taskflow.api.project.dto.ProjectInvitationVerifyResponseDto;
 import com.taskflow.api.project.entity.InvitationStatus;
 import com.taskflow.api.project.entity.Project;
 import com.taskflow.api.project.entity.ProjectInvitation;
@@ -66,6 +67,25 @@ public class ProjectInvitationService {
                 RabbitMQConfig.PROJECT_EXCHANGE,       // ¿A qué cartero le damos el mensaje? (Exchange)
                 RabbitMQConfig.INVITATION_ROUTING_KEY, // ¿Qué dirección de entrega tiene? (Routing Key)
                 emailEvent                             // El paquete real con la información
+        );
+    }
+
+    public ProjectInvitationVerifyResponseDto verifyInvitationToken(String token) {
+        ProjectInvitation invitation = invitationRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token de invitación inválido o no encontrado"));
+
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new RuntimeException("Esta invitación ya fue procesada anteriormente.");
+        }
+
+        if (invitation.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("El enlace de invitación ha caducado.");
+        }
+
+        return new ProjectInvitationVerifyResponseDto(
+                invitation.getProject().getName(),
+                invitation.getRole().name(),
+                invitation.getGuestEmail()
         );
     }
 }

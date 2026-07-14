@@ -1,10 +1,12 @@
 package com.taskflow.api.task.service;
 
 import com.taskflow.api.project.entity.Project;
+import com.taskflow.api.project.entity.ProjectRole;
 import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
 import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
+import com.taskflow.api.task.dto.ChangeTaskStatusRequestDto;
 import com.taskflow.api.task.dto.CreateTaskRequestDto;
 import com.taskflow.api.task.dto.TaskResponseDto;
 import com.taskflow.api.task.dto.UpdateTaskRequestDto;
@@ -15,6 +17,7 @@ import com.taskflow.api.user.UserRepository;
 import com.taskflow.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -115,8 +118,6 @@ public class TaskService {
 
     }
 
-
-
     @Transactional(readOnly = true)
     public Page<TaskResponseDto> getTaskWithFilters (
             UUID projectId,
@@ -157,6 +158,61 @@ public class TaskService {
         return taskPage.map(this::mapToResponseDto);
 
     }
+
+
+    @Transactional(readOnly = true)
+    public TaskResponseDto getById (UUID projectId, UUID taskId) {
+        Task  task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarea no encontrada"));
+
+        if (!task.getProject().getId().equals(projectId)) {
+            throw new BusinessRuleException("La tarea no pertenece  al proyecto especificado");
+        }
+
+        return mapToResponseDto(task);
+    }
+
+    @Transactional
+    public void deleteById (UUID projectId, UUID taskId) {
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarea no encontrada"));
+
+        if (!task.getProject().getId().equals(projectId)) {
+            throw new BusinessRuleException("La tarea no pertenece  al proyecto especificado");
+        }
+
+        ProjectRole userRole = projectRepository.findRoleByProjectAndUser(projectId, currentUser.getId())
+                .orElseThrow(() -> new AccessDeniedException("No tienes acceso a este proyecto"));
+
+        if (userRole != ProjectRole.OWNER && userRole != ProjectRole.MANAGER) {
+            throw new AccessDeniedException("Acción denegada, no puedes realizar esta accion");
+        }
+
+        taskRepository.delete(task);
+    }
+
+    public TaskResponseDto updateTaskStatus( UUID projectId, UUID taskId, ChangeTaskStatusRequestDto request ) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarea no encontrada"));
+
+        if (!task.getProject().getId().equals(projectId)) {
+            throw new BusinessRuleException("La tarea no pertenece  al proyecto especificado");
+        }
+
+        task.setStatus(request.status());
+
+        Task updatedTask = taskRepository.save(task);
+
+        return mapToResponseDto(updatedTask);
+    }
+
 
     private void validateProjectMember(UUID projectId, UUID userId, String errorPrefix) {
         boolean isMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);

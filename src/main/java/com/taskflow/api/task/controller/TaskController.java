@@ -1,6 +1,7 @@
 package com.taskflow.api.task.controller;
 
 import com.taskflow.api.shared.dto.PageResponseDto;
+import com.taskflow.api.task.dto.ChangeTaskStatusRequestDto;
 import com.taskflow.api.task.dto.CreateTaskRequestDto;
 import com.taskflow.api.task.dto.TaskResponseDto;
 import com.taskflow.api.task.dto.UpdateTaskRequestDto;
@@ -74,5 +75,34 @@ public class TaskController {
 
         return ResponseEntity.ok(cleanResponse);
 
+    }
+
+    @GetMapping("/{projectId}/tasks/{taskId}")
+    public ResponseEntity<TaskResponseDto> findTask (
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId
+    ) {
+        TaskResponseDto response = taskService.getById(projectId, taskId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{projectId}/tasks/{taskId}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId
+    ) {
+        taskService.deleteById(projectId, taskId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{projectId}/tasks/{taskId}/status")
+    public ResponseEntity<TaskResponseDto> updateTaskStatus(
+            @PathVariable UUID projectId,
+            @PathVariable UUID taskId,
+            @Valid @RequestBody ChangeTaskStatusRequestDto request
+    ) {
+        taskService.updateTaskStatus(projectId, taskId, request);
+
+        return ResponseEntity.noContent().build();
     }
 }

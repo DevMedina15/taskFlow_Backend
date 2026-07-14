@@ -7,11 +7,13 @@ import com.taskflow.api.project.repository.ProjectInvitationRepository;
 import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
 import com.taskflow.api.shared.config.RabbitMQConfig;
+import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
 import com.taskflow.api.user.UserRepository;
 import com.taskflow.api.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,14 +76,14 @@ public class ProjectInvitationService {
 
     public ProjectInvitationVerifyResponseDto verifyInvitationToken(String token) {
         ProjectInvitation invitation = invitationRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token de invitación inválido o no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Token de invitación inválido o no encontrado"));
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new RuntimeException("Esta invitación ya fue procesada anteriormente.");
+            throw new BusinessRuleException("Esta invitación ya fue procesada anteriormente.");
         }
 
         if (invitation.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("El enlace de invitación ha caducado.");
+            throw new BusinessRuleException("El enlace de invitación ha caducado.");
         }
 
         return new ProjectInvitationVerifyResponseDto(
@@ -94,25 +96,25 @@ public class ProjectInvitationService {
     @Transactional
     public void acceptInvitation(String token, String currentUserEmail) {
         ProjectInvitation invitation = invitationRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token de invitación inválido o no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Token de invitación inválido o no encontrado"));
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new RuntimeException("Esta invitación ya fue procesada o ha expirado.");
+            throw new BusinessRuleException("Esta invitación ya fue procesada o ha expirado.");
         }
 
         if (invitation.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("El enlace de invitación ha caducado.");
+            throw new BusinessRuleException("El enlace de invitación ha caducado.");
         }
 
         if (!invitation.getGuestEmail().equalsIgnoreCase(currentUserEmail)) {
-            throw new RuntimeException("No estás autorizado. El correo de la invitación no coincide con tu cuenta.");
+            throw new AccessDeniedException("No estás autorizado. El correo de la invitación no coincide con tu cuenta.");
         }
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
 
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado en el sistema."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado en el sistema."));
 
 
         ProjectMember newMember = ProjectMember.builder()

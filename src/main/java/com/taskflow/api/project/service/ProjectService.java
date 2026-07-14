@@ -10,6 +10,7 @@ import com.taskflow.api.project.entity.ProjectRole;
 import com.taskflow.api.project.entity.ProjectStatus;
 import com.taskflow.api.project.repository.ProjectMemberRepository;
 import com.taskflow.api.project.repository.ProjectRepository;
+import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
 import com.taskflow.api.user.UserRepository;
 import com.taskflow.api.user.entity.User;
@@ -175,5 +176,15 @@ public class ProjectService {
                         member.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void removeMemberFromProject(UUID projectId, UUID userId) {
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no pertenece a este proyecto."));
+
+        if (member.getRole() == ProjectRole.OWNER) throw new BusinessRuleException("No puedes realizar esta accion");
+
+        projectMemberRepository.delete(member);
     }
 }

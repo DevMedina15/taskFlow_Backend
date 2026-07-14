@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,4 +25,6 @@ public interface ProjectInvitationRepository extends JpaRepository<ProjectInvita
             @Param("pendingStatus") InvitationStatus pendingStatus,
             @Param("now") LocalDateTime now
     );
+
+    List<ProjectInvitation> findAllByProjectId(UUID projectId);
 }

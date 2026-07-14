@@ -187,4 +187,15 @@ public class ProjectService {
 
         projectMemberRepository.delete(member);
     }
+
+
+    @Transactional
+    public void updateMemberRole(UUID projectId, UUID userId, ProjectRole newRole) {
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no pertenece a este proyecto."));
+
+        member.setRole(newRole);
+
+        projectMemberRepository.save(member);
+    }
 }

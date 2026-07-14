@@ -1,6 +1,7 @@
 package com.taskflow.api.project.service;
 
 import com.taskflow.api.project.dto.ProjectInvitationEmailEvent;
+import com.taskflow.api.project.dto.ProjectInvitationResponseDto;
 import com.taskflow.api.project.dto.ProjectInvitationVerifyResponseDto;
 import com.taskflow.api.project.entity.*;
 import com.taskflow.api.project.repository.ProjectInvitationRepository;
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,5 +127,21 @@ public class ProjectInvitationService {
                 .build();
 
         projectMemberRepository.save(newMember);
+    }
+
+    public List<ProjectInvitationResponseDto> getProjectInvitations(UUID projectId) {
+
+        List<ProjectInvitation> invitations = invitationRepository.findAllByProjectId(projectId);
+
+        return invitations.stream()
+                .map(inv -> new ProjectInvitationResponseDto(
+                        inv.getId(),
+                        inv.getGuestEmail(),
+                        inv.getRole(),
+                        inv.getStatus(),
+                        inv.getExpirationDate(),
+                        inv.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 }

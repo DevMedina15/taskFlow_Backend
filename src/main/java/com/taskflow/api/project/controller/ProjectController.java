@@ -1,9 +1,6 @@
 package com.taskflow.api.project.controller;
 
-import com.taskflow.api.project.dto.CreateProjectRequestDto;
-import com.taskflow.api.project.dto.ProjectMemberResponseDto;
-import com.taskflow.api.project.dto.ProjectResponseDto;
-import com.taskflow.api.project.dto.UpdateProjectRequestDto;
+import com.taskflow.api.project.dto.*;
 import com.taskflow.api.project.entity.ProjectRole;
 import com.taskflow.api.project.entity.ProjectStatus;
 import com.taskflow.api.project.service.ProjectService;
@@ -88,8 +85,18 @@ public class ProjectController {
             @PathVariable UUID userId
     ) {
         projectService.removeMemberFromProject(projectId, userId);
-        
+
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{projectId}/members/{userId}/role")
+    public ResponseEntity<Void> updateMemberRole(
+            @PathVariable UUID projectId,
+            @PathVariable UUID userId,
+            @RequestBody UpdateMemberRoleRequestDto request
+    ) {
+        projectService.updateMemberRole(projectId, userId, request.role());
+        return ResponseEntity.ok().build();
     }
 
 }

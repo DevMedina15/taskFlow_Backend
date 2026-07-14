@@ -1,6 +1,7 @@
 package com.taskflow.api.project.controller;
 
 import com.taskflow.api.project.dto.InviteUserRequestDto;
+import com.taskflow.api.project.dto.ProjectInvitationResponseDto;
 import com.taskflow.api.project.dto.ProjectInvitationVerifyResponseDto;
 import com.taskflow.api.project.service.ProjectInvitationService;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -46,5 +48,13 @@ public class ProjectInvitationController {
         String currentUserEmail = principal.getName();
         invitationService.acceptInvitation(token, currentUserEmail);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{projectId}/invitations")
+    public ResponseEntity<List<ProjectInvitationResponseDto>> getProjectInvitations(
+            @PathVariable UUID projectId
+    ) {
+        List<ProjectInvitationResponseDto> invitations = invitationService.getProjectInvitations(projectId);
+        return ResponseEntity.ok(invitations);
     }
 }

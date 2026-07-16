@@ -1,6 +1,7 @@
 package com.taskflow.api.auth.controller;
 
 import com.taskflow.api.auth.dto.AuthResponseDto;
+import com.taskflow.api.auth.dto.GoogleLoginRequestDto;
 import com.taskflow.api.auth.dto.LoginRequestDto;
 import com.taskflow.api.auth.dto.RegisterRequestDto;
 import com.taskflow.api.auth.service.AuthService;
@@ -28,5 +29,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/oauth2")
+    public ResponseEntity<AuthResponseDto> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequestDto request
+    ) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request));
     }
 }

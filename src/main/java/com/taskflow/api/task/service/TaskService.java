@@ -13,7 +13,7 @@ import com.taskflow.api.task.dto.UpdateTaskRequestDto;
 import com.taskflow.api.task.entity.Task;
 import com.taskflow.api.task.entity.TaskPriority;
 import com.taskflow.api.task.repository.TaskRepository;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

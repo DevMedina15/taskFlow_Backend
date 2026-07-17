@@ -10,7 +10,7 @@ import com.taskflow.api.project.repository.ProjectRepository;
 import com.taskflow.api.shared.config.RabbitMQConfig;
 import com.taskflow.api.shared.exception.BusinessRuleException;
 import com.taskflow.api.shared.exception.ResourceNotFoundException;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

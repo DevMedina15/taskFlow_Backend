@@ -10,7 +10,7 @@ import com.taskflow.api.task.entity.Task;
 import com.taskflow.api.task.entity.TaskComment;
 import com.taskflow.api.task.repository.TaskCommentRepository;
 import com.taskflow.api.task.repository.TaskRepository;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

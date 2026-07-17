@@ -13,7 +13,7 @@ import com.taskflow.api.task.entity.Task;
 import com.taskflow.api.task.entity.TaskPriority;
 import com.taskflow.api.task.entity.TaskStatus;
 import com.taskflow.api.task.repository.TaskRepository;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

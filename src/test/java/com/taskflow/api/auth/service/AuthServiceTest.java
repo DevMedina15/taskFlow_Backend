@@ -9,7 +9,7 @@ import com.taskflow.api.auth.dto.RegisterRequestDto;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
 
 import static org.assertj.core.api.Assertions.assertThat;

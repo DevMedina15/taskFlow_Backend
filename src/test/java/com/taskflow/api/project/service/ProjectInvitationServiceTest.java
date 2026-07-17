@@ -163,7 +163,7 @@ class ProjectInvitationServiceTest {
     void acceptInvitation_Success() {
         String token = UUID.randomUUID().toString();
         String email = "guest@gmail.com";
-        
+
         Project project = Project.builder().build();
         project.setId(UUID.randomUUID());
 

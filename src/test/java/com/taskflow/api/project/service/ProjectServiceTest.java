@@ -88,7 +88,7 @@ class ProjectServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         // Devuelve true la primera vez (colisión), y false la segunda
-        when(projectRepository.existsByCode(anyString())).thenReturn(true, true);
+        when(projectRepository.existsByCode(anyString())).thenReturn(true, false);
 
         projectService.createProject(request, email);
 

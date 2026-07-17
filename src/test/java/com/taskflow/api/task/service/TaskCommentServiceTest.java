@@ -48,7 +48,7 @@ class TaskCommentServiceTest {
     private TaskCommentService commentService;
 
     // ==========================================
-    // TESTS PARA: getValidatedTaskContext (Llamado en create y get)
+    // TESTS PARA: getValidatedTaskContext
     // ==========================================
 
     @Test

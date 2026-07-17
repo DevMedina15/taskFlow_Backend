@@ -144,7 +144,7 @@ class ProjectInvitationServiceTest {
     void verifyInvitationToken_Expired() {
         ProjectInvitation invitation = ProjectInvitation.builder()
                 .status(InvitationStatus.PENDING)
-                .expirationDate(LocalDateTime.now().minusDays(1)) // Fecha en el pasado
+                .expirationDate(LocalDateTime.now().minusDays(1))
                 .build();
 
         when(invitationRepository.findByToken(anyString())).thenReturn(Optional.of(invitation));

@@ -98,8 +98,8 @@ class TaskServiceTest {
 
         CreateTaskRequestDto request = new CreateTaskRequestDto(
                 "T", "D", null, null,
-                LocalDateTime.now().plusDays(5), // Start
-                LocalDateTime.now().plusDays(1), // End (Inválido)
+                LocalDateTime.now().plusDays(5),
+                LocalDateTime.now().plusDays(1),
                 5, "branch", null, null
         );
 
@@ -169,7 +169,7 @@ class TaskServiceTest {
         UUID taskId = UUID.randomUUID();
 
         Project wrongProject = Project.builder().build();
-        wrongProject.setId(UUID.randomUUID()); // ID diferente
+        wrongProject.setId(UUID.randomUUID());
 
         Task task = Task.builder().project(wrongProject).build();
         task.setId(taskId);

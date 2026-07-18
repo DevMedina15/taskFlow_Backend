@@ -2,10 +2,7 @@ package com.taskflow.api.auth.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.taskflow.api.auth.dto.AuthResponseDto;
-import com.taskflow.api.auth.dto.GoogleLoginRequestDto;
-import com.taskflow.api.auth.dto.LoginRequestDto;
-import com.taskflow.api.auth.dto.RegisterRequestDto;
+import com.taskflow.api.auth.dto.*;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
@@ -13,6 +10,7 @@ import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.Role;
 import com.taskflow.api.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -43,69 +41,74 @@ public class AuthService {
 
         userRepository.save(user);
 
-        SecurityUser securityUser = new SecurityUser(user);
-        String jwtToken = jwtService.generateToken(securityUser);
-
-        return new AuthResponseDto(jwtToken);
+        return buildAuthResponse(user);
     }
 
     public AuthResponseDto login(LoginRequestDto request) {
+
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BusinessRuleException("Credenciales incorrectas"));
+                .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new BusinessRuleException("Credenciales incorrectas");
+            throw new BadCredentialsException("Credenciales incorrectas");
         }
 
-        SecurityUser securityUser = new SecurityUser(user);
-        String jwtToken = jwtService.generateToken(securityUser);
-
-        return new AuthResponseDto(jwtToken);
+        return buildAuthResponse(user);
 
     }
 
     public AuthResponseDto loginWithGoogle(GoogleLoginRequestDto request) {
         try {
 
-            // 1. Se desencripta y valida la firma del token
             GoogleIdToken idToken = googleIdTokenVerifier.verify(request.idToken());
 
             if (idToken == null) {
                 throw new BusinessRuleException("Token de Google invalido");
             }
 
-            // 2. Extracción de informaión del usuario
             GoogleIdToken.Payload payload = idToken.getPayload();
+
             String email = payload.getEmail();
             String name = (String) payload.get("name");
 
-            // 3. Lógica de negocio: Buscar o crear
             Optional<User> userOptional = userRepository.findByEmail(email);
-            User user;
 
-            if (userOptional.isPresent()) {
-                user = userOptional.get();
-            } else {
+            User user = userOptional.orElseGet(() -> {
                 String randomPassword = UUID.randomUUID().toString();
 
-                user = User.builder()
+                User newUser = User.builder()
                         .email(email)
                         .fullName(name != null ? name : "Usuario de Google")
                         .password(passwordEncoder.encode(randomPassword))
                         .role(Role.SYS_USER)
                         .build();
-                userRepository.save(user);
-            }
 
-            // 4. Lo incluimos al sistema y se le genera su JWT
+                return userRepository.save(newUser);
+            });
 
-            SecurityUser securityUser = new SecurityUser(user);
-            String jwtToken = jwtService.generateToken(securityUser);
 
-            return new AuthResponseDto(jwtToken);
 
-        } catch (Exception e) {
-            throw new BusinessRuleException("Error en autenticación Google: " +  e.getMessage());
+            return buildAuthResponse(user);
+
+        } catch (BusinessRuleException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BusinessRuleException("Error en autenticacion Google");
         }
+    }
+
+    private AuthResponseDto buildAuthResponse(User user) {
+
+        SecurityUser securityUser = new SecurityUser(user);
+
+        String accessTOken = jwtService.generateToken(securityUser);
+
+        AuthenticatedUserDto authenticatedUserDto = new AuthenticatedUserDto(
+            user.getFullName(),
+            user.getEmail()
+        );
+
+        return new AuthResponseDto(accessTOken, authenticatedUserDto);
+
     }
 }

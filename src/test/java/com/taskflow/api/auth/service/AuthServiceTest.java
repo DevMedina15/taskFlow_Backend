@@ -9,23 +9,22 @@ import com.taskflow.api.auth.dto.RegisterRequestDto;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
-import com.taskflow.api.user.repository.UserRepository;
 import com.taskflow.api.user.entity.User;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-
+import com.taskflow.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,16 +45,17 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-
     @Test
     void failedRegistration() {
 
         RegisterRequestDto request = new RegisterRequestDto(
                 "Juan David Angeles Medina",
                 "juandavid151199@gmail.com",
-                "960358293");
+                "960358293"
+        );
 
-        when(userRepository.findByEmail("juandavid151199@gmail.com")).thenReturn(Optional.of(new User()));
+        when(userRepository.findByEmail("juandavid151199@gmail.com"))
+                .thenReturn(Optional.of(new User()));
 
         Throwable error = catchThrowable(() -> authService.register(request));
 
@@ -66,20 +66,29 @@ class AuthServiceTest {
 
     @Test
     void successfulRegistration() {
+
         RegisterRequestDto request = new RegisterRequestDto(
                 "Juan David Angeles Medina",
                 "juandavid151199@gmail.com",
-                "960358293");
+                "960358293"
+        );
 
-        when(userRepository.findByEmail("juandavid151199@gmail.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("juandavid151199@gmail.com"))
+                .thenReturn(Optional.empty());
 
-        when(passwordEncoder.encode(anyString())).thenReturn("clave-encriptada-falsa");
+        when(passwordEncoder.encode(anyString()))
+                .thenReturn("clave-encriptada-falsa");
 
-        when(jwtService.generateToken(any(SecurityUser.class))).thenReturn("token");
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("token");
 
         AuthResponseDto response = authService.register(request);
 
-        assertThat(response.jwtToken()).isEqualTo("token");
+        assertThat(response).isNotNull();
+        assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.user()).isNotNull();
+        assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
+        assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
 
         verify(userRepository).save(any(User.class));
     }
@@ -87,57 +96,77 @@ class AuthServiceTest {
     @Test
     void failedLogin() {
 
-        LoginRequestDto loginDto = new LoginRequestDto("juandavid151199@gmail.com", "960358293");
+        LoginRequestDto loginDto = new LoginRequestDto(
+                "juandavid151199@gmail.com",
+                "960358293"
+        );
 
         User fakeUser = User.builder()
+                .email("juandavid151199@gmail.com")
+                .fullName("Juan David Angeles Medina")
                 .password("contraseña-encriptada")
                 .build();
 
-        when(userRepository.findByEmail(loginDto.email())).thenReturn(Optional.of(fakeUser));
+        when(userRepository.findByEmail(loginDto.email()))
+                .thenReturn(Optional.of(fakeUser));
 
-        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
+        when(passwordEncoder.matches(anyString(), anyString()))
+                .thenReturn(false);
 
         Throwable error = catchThrowable(() -> authService.login(loginDto));
 
         assertThat(error)
-                .isInstanceOf(BusinessRuleException.class)
+                .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Credenciales incorrectas");
-
     }
 
     @Test
     void successfulLogin() {
-        LoginRequestDto loginDto = new LoginRequestDto("juandavid151199@gmail.com", "960358293");
+
+        LoginRequestDto loginDto = new LoginRequestDto(
+                "juandavid151199@gmail.com",
+                "960358293"
+        );
 
         User fakeUser = User.builder()
                 .email("juandavid151199@gmail.com")
+                .fullName("Juan David Angeles Medina")
                 .password("contraseña-encriptada")
                 .build();
 
-        when(userRepository.findByEmail(loginDto.email())).thenReturn(Optional.of(fakeUser));
+        when(userRepository.findByEmail(loginDto.email()))
+                .thenReturn(Optional.of(fakeUser));
 
-        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+        when(passwordEncoder.matches(anyString(), anyString()))
+                .thenReturn(true);
 
-        when(jwtService.generateToken(any(SecurityUser.class))).thenReturn("token");
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("token");
 
-        AuthResponseDto responseDto = authService.login(loginDto);
+        AuthResponseDto response = authService.login(loginDto);
 
-        assertThat(responseDto).isNotNull();
-        assertThat(responseDto.jwtToken()).isEqualTo("token");
-
+        assertThat(response).isNotNull();
+        assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.user()).isNotNull();
+        assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
+        assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
     }
 
     @Test
     void failedLoginUserNotFound() {
 
-        LoginRequestDto loginDto = new LoginRequestDto("fantasma@gmail.com", "960358293");
+        LoginRequestDto loginDto = new LoginRequestDto(
+                "fantasma@gmail.com",
+                "960358293"
+        );
 
-        when(userRepository.findByEmail(loginDto.email())).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(loginDto.email()))
+                .thenReturn(Optional.empty());
 
         Throwable error = catchThrowable(() -> authService.login(loginDto));
 
         assertThat(error)
-                .isInstanceOf(BusinessRuleException.class)
+                .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Credenciales incorrectas");
     }
 
@@ -146,14 +175,14 @@ class AuthServiceTest {
 
         GoogleLoginRequestDto loginRequestDto = new GoogleLoginRequestDto("token");
 
-        when(googleIdTokenVerifier.verify(anyString())).thenReturn(null);
+        when(googleIdTokenVerifier.verify(anyString()))
+                .thenReturn(null);
 
         Throwable error = catchThrowable(() -> authService.loginWithGoogle(loginRequestDto));
 
         assertThat(error)
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Error en autenticación Google: Token de Google invalido");
-
+                .hasMessage("Token de Google invalido");
     }
 
     @Test
@@ -162,27 +191,36 @@ class AuthServiceTest {
         GoogleLoginRequestDto loginDto = new GoogleLoginRequestDto("token");
 
         GoogleIdToken idTokenMock = mock(GoogleIdToken.class);
+
         GoogleIdToken.Payload payloadFake = new GoogleIdToken.Payload();
         payloadFake.setEmail("juandavid151199@gmail.com");
         payloadFake.set("name", "JUAN DAVID ANGELES MEDINA");
 
-        when(idTokenMock.getPayload()).thenReturn(payloadFake);
-        when(googleIdTokenVerifier.verify(anyString())).thenReturn(idTokenMock);
+        when(idTokenMock.getPayload())
+                .thenReturn(payloadFake);
+
+        when(googleIdTokenVerifier.verify(anyString()))
+                .thenReturn(idTokenMock);
 
         User fakeUser = User.builder()
                 .email("juandavid151199@gmail.com")
+                .fullName("JUAN DAVID ANGELES MEDINA")
                 .password("password")
                 .build();
-        when(userRepository.findByEmail("juandavid151199@gmail.com")).thenReturn(Optional.of(fakeUser));
 
-        when(jwtService.generateToken(any(SecurityUser.class))).thenReturn("jwt");
+        when(userRepository.findByEmail("juandavid151199@gmail.com"))
+                .thenReturn(Optional.of(fakeUser));
+
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("jwt");
 
         AuthResponseDto response = authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
-        assertThat(response.jwtToken()).isEqualTo("jwt");
-
-
+        assertThat(response.accessToken()).isEqualTo("jwt");
+        assertThat(response.user()).isNotNull();
+        assertThat(response.user().fullName()).isEqualTo("JUAN DAVID ANGELES MEDINA");
+        assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
     }
 
     @Test
@@ -191,22 +229,36 @@ class AuthServiceTest {
         GoogleLoginRequestDto loginDto = new GoogleLoginRequestDto("token");
 
         GoogleIdToken idTokenMock = mock(GoogleIdToken.class);
+
         GoogleIdToken.Payload payloadFake = new GoogleIdToken.Payload();
         payloadFake.setEmail("nuevo-usuario@gmail.com");
         payloadFake.set("name", "Nuevo Usuario");
 
-        when(idTokenMock.getPayload()).thenReturn(payloadFake);
-        when(googleIdTokenVerifier.verify(anyString())).thenReturn(idTokenMock);
+        when(idTokenMock.getPayload())
+                .thenReturn(payloadFake);
 
-        when(userRepository.findByEmail("nuevo-usuario@gmail.com")).thenReturn(Optional.empty());
+        when(googleIdTokenVerifier.verify(anyString()))
+                .thenReturn(idTokenMock);
 
-        when(passwordEncoder.encode(anyString())).thenReturn("clave-aleatoria-encriptada");
-        when(jwtService.generateToken(any(SecurityUser.class))).thenReturn("jwt-nuevo");
+        when(userRepository.findByEmail("nuevo-usuario@gmail.com"))
+                .thenReturn(Optional.empty());
+
+        when(passwordEncoder.encode(anyString()))
+                .thenReturn("clave-aleatoria-encriptada");
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("jwt-nuevo");
 
         AuthResponseDto response = authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
-        assertThat(response.jwtToken()).isEqualTo("jwt-nuevo");
+        assertThat(response.accessToken()).isEqualTo("jwt-nuevo");
+        assertThat(response.user()).isNotNull();
+        assertThat(response.user().fullName()).isEqualTo("Nuevo Usuario");
+        assertThat(response.user().email()).isEqualTo("nuevo-usuario@gmail.com");
 
         verify(userRepository).save(any(User.class));
     }

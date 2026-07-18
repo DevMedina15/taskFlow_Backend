@@ -1,6 +1,7 @@
 package com.taskflow.api.security.config;
 
 import com.taskflow.api.security.filter.JwtAuthenticationFilter;
+import com.taskflow.api.security.handler.SecurityExceptionHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,17 +20,44 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final SecurityExceptionHandler securityExceptionHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                securityExceptionHandler::handleAuthenticationException
+                        )
+                        .accessDeniedHandler(
+                                securityExceptionHandler::handleAccessDeniedException
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/api/v1/projects/verify", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/oauth2",
+                                "/api/v1/projects/verify",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .build();
     }
 

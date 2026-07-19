@@ -2,10 +2,7 @@ package com.taskflow.api.auth.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.taskflow.api.auth.dto.AuthResponseDto;
-import com.taskflow.api.auth.dto.GoogleLoginRequestDto;
-import com.taskflow.api.auth.dto.LoginRequestDto;
-import com.taskflow.api.auth.dto.RegisterRequestDto;
+import com.taskflow.api.auth.dto.*;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
@@ -261,5 +258,24 @@ class AuthServiceTest {
         assertThat(response.user().email()).isEqualTo("nuevo-usuario@gmail.com");
 
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void getCurrentUser() {
+
+        User fakeUser = User.builder()
+                .fullName("Juan David Angeles Medina")
+                .email("juandavid151199@gmail.com")
+                .password("contraseña-encriptada")
+                .build();
+
+        SecurityUser securityUser = new SecurityUser(fakeUser);
+
+        AuthenticatedUserDto response = authService.getCurrentUser(securityUser);
+
+        assertThat(response).isNotNull();
+        assertThat(response.fullName()).isEqualTo("Juan David Angeles Medina");
+        assertThat(response.email()).isEqualTo("juandavid151199@gmail.com");
+
     }
 }

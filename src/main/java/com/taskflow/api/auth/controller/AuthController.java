@@ -1,21 +1,17 @@
 package com.taskflow.api.auth.controller;
 
-import com.taskflow.api.auth.dto.AuthResponseDto;
-import com.taskflow.api.auth.dto.GoogleLoginRequestDto;
-import com.taskflow.api.auth.dto.LoginRequestDto;
-import com.taskflow.api.auth.dto.RegisterRequestDto;
+import com.taskflow.api.auth.dto.*;
 import com.taskflow.api.auth.service.AuthService;
+import com.taskflow.api.security.model.SecurityUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/v1/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -36,5 +32,14 @@ public class AuthController {
             @Valid @RequestBody GoogleLoginRequestDto request
     ) {
         return ResponseEntity.ok(authService.loginWithGoogle(request));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AuthenticatedUserDto> getCurrentUser(
+            @AuthenticationPrincipal SecurityUser securityUser
+    ) {
+        return ResponseEntity.ok(
+                authService.getCurrentUser(securityUser)
+        );
     }
 }

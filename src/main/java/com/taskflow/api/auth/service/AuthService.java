@@ -97,18 +97,25 @@ public class AuthService {
         }
     }
 
+    public AuthenticatedUserDto getCurrentUser(SecurityUser securityUser) {
+        return buildAuthenticatedUser(securityUser.getUser());
+    }
+
     private AuthResponseDto buildAuthResponse(User user) {
 
         SecurityUser securityUser = new SecurityUser(user);
 
-        String accessTOken = jwtService.generateToken(securityUser);
+        String accessToken = jwtService.generateToken(securityUser);
 
-        AuthenticatedUserDto authenticatedUserDto = new AuthenticatedUserDto(
-            user.getFullName(),
-            user.getEmail()
+        AuthenticatedUserDto authenticatedUserDto = buildAuthenticatedUser(user);
+
+        return new AuthResponseDto(accessToken, authenticatedUserDto);
+    }
+
+    private AuthenticatedUserDto buildAuthenticatedUser(User user) {
+        return new AuthenticatedUserDto(
+                user.getFullName(),
+                user.getEmail()
         );
-
-        return new AuthResponseDto(accessTOken, authenticatedUserDto);
-
     }
 }

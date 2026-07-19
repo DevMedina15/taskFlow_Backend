@@ -39,6 +39,9 @@ class AuthServiceTest {
     @Mock
     private GoogleIdTokenVerifier googleIdTokenVerifier;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -79,10 +82,14 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(SecurityUser.class)))
                 .thenReturn("token");
 
+        when(refreshTokenService.createRefreshToken(any(User.class)))
+                .thenReturn("refresh-token");
+
         AuthResponseDto response = authService.register(request);
 
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
         assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
@@ -140,10 +147,14 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(SecurityUser.class)))
                 .thenReturn("token");
 
+        when(refreshTokenService.createRefreshToken(any(User.class)))
+                .thenReturn("refresh-token");
+
         AuthResponseDto response = authService.login(loginDto);
 
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
         assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
@@ -211,10 +222,14 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(SecurityUser.class)))
                 .thenReturn("jwt");
 
+        when(refreshTokenService.createRefreshToken(any(User.class)))
+                .thenReturn("refresh-google");
+
         AuthResponseDto response = authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("jwt");
+        assertThat(response.refreshToken()).isEqualTo("refresh-google");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("JUAN DAVID ANGELES MEDINA");
         assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
@@ -248,11 +263,14 @@ class AuthServiceTest {
 
         when(jwtService.generateToken(any(SecurityUser.class)))
                 .thenReturn("jwt-nuevo");
+        when(refreshTokenService.createRefreshToken(any(User.class)))
+                .thenReturn("refresh-nuevo");
 
         AuthResponseDto response = authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("jwt-nuevo");
+        assertThat(response.refreshToken()).isEqualTo("refresh-nuevo");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Nuevo Usuario");
         assertThat(response.user().email()).isEqualTo("nuevo-usuario@gmail.com");
@@ -277,5 +295,50 @@ class AuthServiceTest {
         assertThat(response.fullName()).isEqualTo("Juan David Angeles Medina");
         assertThat(response.email()).isEqualTo("juandavid151199@gmail.com");
 
+    }
+
+    @Test
+    void refreshToken() {
+
+        RefreshTokenRequestDto request =
+                new RefreshTokenRequestDto("refresh-token-viejo");
+
+        User fakeUser = User.builder()
+                .fullName("Juan David Angeles Medina")
+                .email("juandavid151199@gmail.com")
+                .password("contraseña-encriptada")
+                .build();
+
+        when(refreshTokenService.validateAndRotate("refresh-token-viejo"))
+                .thenReturn(fakeUser);
+
+        when(refreshTokenService.createRefreshToken(fakeUser))
+                .thenReturn("refresh-token-nuevo");
+
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("access-token-nuevo");
+
+        AuthResponseDto response = authService.refreshToken(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.accessToken()).isEqualTo("access-token-nuevo");
+        assertThat(response.refreshToken()).isEqualTo("refresh-token-nuevo");
+        assertThat(response.user()).isNotNull();
+        assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
+        assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
+
+        verify(refreshTokenService).validateAndRotate("refresh-token-viejo");
+        verify(refreshTokenService).createRefreshToken(fakeUser);
+    }
+
+    @Test
+    void logout() {
+
+        RefreshTokenRequestDto request =
+                new RefreshTokenRequestDto("refresh-token");
+
+        authService.logout(request);
+
+        verify(refreshTokenService).revoke("refresh-token");
     }
 }

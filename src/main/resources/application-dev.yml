@@ -46,3 +46,5 @@ api:
     jwt:
       secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION}
+    refresh-token:
+      expiration: ${REFRESH_TOKEN_EXPIRATION}

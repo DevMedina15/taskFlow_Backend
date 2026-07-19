@@ -25,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponseDto register(RegisterRequestDto request) {
 
@@ -101,7 +102,27 @@ public class AuthService {
         return buildAuthenticatedUser(securityUser.getUser());
     }
 
+    public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
+
+        User user = refreshTokenService.validateAndRotate(request.refreshToken());
+
+        String newRefreshToken = refreshTokenService.createRefreshToken(user);
+
+        return buildAuthResponse(user, newRefreshToken);
+    }
+
+    public void logout(RefreshTokenRequestDto request) {
+        refreshTokenService.revoke(request.refreshToken());
+    }
+
     private AuthResponseDto buildAuthResponse(User user) {
+
+        String refreshToken = refreshTokenService.createRefreshToken(user);
+
+        return buildAuthResponse(user, refreshToken);
+    }
+
+    private AuthResponseDto buildAuthResponse(User user, String refreshToken) {
 
         SecurityUser securityUser = new SecurityUser(user);
 
@@ -109,7 +130,11 @@ public class AuthService {
 
         AuthenticatedUserDto authenticatedUserDto = buildAuthenticatedUser(user);
 
-        return new AuthResponseDto(accessToken, authenticatedUserDto);
+        return new AuthResponseDto(
+                accessToken,
+                refreshToken,
+                authenticatedUserDto
+        );
     }
 
     private AuthenticatedUserDto buildAuthenticatedUser(User user) {

@@ -3,6 +3,7 @@ package com.taskflow.api.auth.service;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.taskflow.api.auth.dto.*;
+import com.taskflow.api.auth.service.result.AuthSessionResult;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
@@ -27,7 +28,7 @@ public class AuthService {
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
     private final RefreshTokenService refreshTokenService;
 
-    public AuthResponseDto register(RegisterRequestDto request) {
+    public AuthSessionResult register(RegisterRequestDto request) {
 
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new BusinessRuleException("El correo ya está registrado en el sistema");
@@ -42,10 +43,10 @@ public class AuthService {
 
         userRepository.save(user);
 
-        return buildAuthResponse(user);
+        return buildAuthSession(user);
     }
 
-    public AuthResponseDto login(LoginRequestDto request) {
+    public AuthSessionResult login(LoginRequestDto request) {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
@@ -54,13 +55,11 @@ public class AuthService {
             throw new BadCredentialsException("Credenciales incorrectas");
         }
 
-        return buildAuthResponse(user);
-
+        return buildAuthSession(user);
     }
 
-    public AuthResponseDto loginWithGoogle(GoogleLoginRequestDto request) {
+    public AuthSessionResult loginWithGoogle(GoogleLoginRequestDto request) {
         try {
-
             GoogleIdToken idToken = googleIdTokenVerifier.verify(request.idToken());
 
             if (idToken == null) {
@@ -87,9 +86,7 @@ public class AuthService {
                 return userRepository.save(newUser);
             });
 
-
-
-            return buildAuthResponse(user);
+            return buildAuthSession(user);
 
         } catch (BusinessRuleException exception) {
             throw exception;
@@ -102,27 +99,36 @@ public class AuthService {
         return buildAuthenticatedUser(securityUser.getUser());
     }
 
-    public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
+    public AuthSessionResult refreshToken(String refreshToken) {
 
-        User user = refreshTokenService.validateAndRotate(request.refreshToken());
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BadCredentialsException("Refresh token inválido");
+        }
+
+        User user = refreshTokenService.validateAndRotate(refreshToken);
 
         String newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-        return buildAuthResponse(user, newRefreshToken);
+        return buildAuthSession(user, newRefreshToken);
     }
 
-    public void logout(RefreshTokenRequestDto request) {
-        refreshTokenService.revoke(request.refreshToken());
+    public void logout(String refreshToken) {
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+
+        refreshTokenService.revoke(refreshToken);
     }
 
-    private AuthResponseDto buildAuthResponse(User user) {
+    private AuthSessionResult buildAuthSession(User user) {
 
         String refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return buildAuthResponse(user, refreshToken);
+        return buildAuthSession(user, refreshToken);
     }
 
-    private AuthResponseDto buildAuthResponse(User user, String refreshToken) {
+    private AuthSessionResult buildAuthSession(User user, String refreshToken) {
 
         SecurityUser securityUser = new SecurityUser(user);
 
@@ -130,7 +136,7 @@ public class AuthService {
 
         AuthenticatedUserDto authenticatedUserDto = buildAuthenticatedUser(user);
 
-        return new AuthResponseDto(
+        return new AuthSessionResult(
                 accessToken,
                 refreshToken,
                 authenticatedUserDto

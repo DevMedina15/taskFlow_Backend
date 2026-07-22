@@ -3,6 +3,7 @@ package com.taskflow.api.auth.service;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.taskflow.api.auth.dto.*;
+import com.taskflow.api.auth.service.result.AuthSessionResult;
 import com.taskflow.api.security.model.SecurityUser;
 import com.taskflow.api.security.service.JwtService;
 import com.taskflow.api.shared.exception.BusinessRuleException;
@@ -62,6 +63,9 @@ class AuthServiceTest {
         assertThat(error)
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("El correo ya está registrado en el sistema");
+
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
     }
 
     @Test
@@ -79,16 +83,16 @@ class AuthServiceTest {
         when(passwordEncoder.encode(anyString()))
                 .thenReturn("clave-encriptada-falsa");
 
-        when(jwtService.generateToken(any(SecurityUser.class)))
-                .thenReturn("token");
-
         when(refreshTokenService.createRefreshToken(any(User.class)))
                 .thenReturn("refresh-token");
 
-        AuthResponseDto response = authService.register(request);
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("access-token");
+
+        AuthSessionResult response = authService.register(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
@@ -122,6 +126,9 @@ class AuthServiceTest {
         assertThat(error)
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Credenciales incorrectas");
+
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
     }
 
     @Test
@@ -144,16 +151,16 @@ class AuthServiceTest {
         when(passwordEncoder.matches(anyString(), anyString()))
                 .thenReturn(true);
 
-        when(jwtService.generateToken(any(SecurityUser.class)))
-                .thenReturn("token");
-
         when(refreshTokenService.createRefreshToken(any(User.class)))
                 .thenReturn("refresh-token");
 
-        AuthResponseDto response = authService.login(loginDto);
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("access-token");
+
+        AuthSessionResult response = authService.login(loginDto);
 
         assertThat(response).isNotNull();
-        assertThat(response.accessToken()).isEqualTo("token");
+        assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
@@ -176,27 +183,36 @@ class AuthServiceTest {
         assertThat(error)
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Credenciales incorrectas");
+
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
     }
 
     @Test
     void failedLoginWithGoogle() throws Exception {
 
-        GoogleLoginRequestDto loginRequestDto = new GoogleLoginRequestDto("token");
+        GoogleLoginRequestDto loginRequestDto =
+                new GoogleLoginRequestDto("token");
 
         when(googleIdTokenVerifier.verify(anyString()))
                 .thenReturn(null);
 
-        Throwable error = catchThrowable(() -> authService.loginWithGoogle(loginRequestDto));
+        Throwable error =
+                catchThrowable(() -> authService.loginWithGoogle(loginRequestDto));
 
         assertThat(error)
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("Token de Google invalido");
+
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
     }
 
     @Test
     void successfulLoginWithGoogle() throws Exception {
 
-        GoogleLoginRequestDto loginDto = new GoogleLoginRequestDto("token");
+        GoogleLoginRequestDto loginDto =
+                new GoogleLoginRequestDto("token");
 
         GoogleIdToken idTokenMock = mock(GoogleIdToken.class);
 
@@ -219,16 +235,17 @@ class AuthServiceTest {
         when(userRepository.findByEmail("juandavid151199@gmail.com"))
                 .thenReturn(Optional.of(fakeUser));
 
-        when(jwtService.generateToken(any(SecurityUser.class)))
-                .thenReturn("jwt");
-
         when(refreshTokenService.createRefreshToken(any(User.class)))
                 .thenReturn("refresh-google");
 
-        AuthResponseDto response = authService.loginWithGoogle(loginDto);
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("access-google");
+
+        AuthSessionResult response =
+                authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
-        assertThat(response.accessToken()).isEqualTo("jwt");
+        assertThat(response.accessToken()).isEqualTo("access-google");
         assertThat(response.refreshToken()).isEqualTo("refresh-google");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("JUAN DAVID ANGELES MEDINA");
@@ -238,7 +255,8 @@ class AuthServiceTest {
     @Test
     void successfulLoginWithGoogleNewUser() throws Exception {
 
-        GoogleLoginRequestDto loginDto = new GoogleLoginRequestDto("token");
+        GoogleLoginRequestDto loginDto =
+                new GoogleLoginRequestDto("token");
 
         GoogleIdToken idTokenMock = mock(GoogleIdToken.class);
 
@@ -261,15 +279,17 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        when(jwtService.generateToken(any(SecurityUser.class)))
-                .thenReturn("jwt-nuevo");
         when(refreshTokenService.createRefreshToken(any(User.class)))
                 .thenReturn("refresh-nuevo");
 
-        AuthResponseDto response = authService.loginWithGoogle(loginDto);
+        when(jwtService.generateToken(any(SecurityUser.class)))
+                .thenReturn("access-nuevo");
+
+        AuthSessionResult response =
+                authService.loginWithGoogle(loginDto);
 
         assertThat(response).isNotNull();
-        assertThat(response.accessToken()).isEqualTo("jwt-nuevo");
+        assertThat(response.accessToken()).isEqualTo("access-nuevo");
         assertThat(response.refreshToken()).isEqualTo("refresh-nuevo");
         assertThat(response.user()).isNotNull();
         assertThat(response.user().fullName()).isEqualTo("Nuevo Usuario");
@@ -289,19 +309,18 @@ class AuthServiceTest {
 
         SecurityUser securityUser = new SecurityUser(fakeUser);
 
-        AuthenticatedUserDto response = authService.getCurrentUser(securityUser);
+        AuthenticatedUserDto response =
+                authService.getCurrentUser(securityUser);
 
         assertThat(response).isNotNull();
         assertThat(response.fullName()).isEqualTo("Juan David Angeles Medina");
         assertThat(response.email()).isEqualTo("juandavid151199@gmail.com");
-
     }
 
     @Test
     void refreshToken() {
 
-        RefreshTokenRequestDto request =
-                new RefreshTokenRequestDto("refresh-token-viejo");
+        String oldRefreshToken = "refresh-token-viejo";
 
         User fakeUser = User.builder()
                 .fullName("Juan David Angeles Medina")
@@ -309,7 +328,7 @@ class AuthServiceTest {
                 .password("contraseña-encriptada")
                 .build();
 
-        when(refreshTokenService.validateAndRotate("refresh-token-viejo"))
+        when(refreshTokenService.validateAndRotate(oldRefreshToken))
                 .thenReturn(fakeUser);
 
         when(refreshTokenService.createRefreshToken(fakeUser))
@@ -318,7 +337,8 @@ class AuthServiceTest {
         when(jwtService.generateToken(any(SecurityUser.class)))
                 .thenReturn("access-token-nuevo");
 
-        AuthResponseDto response = authService.refreshToken(request);
+        AuthSessionResult response =
+                authService.refreshToken(oldRefreshToken);
 
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("access-token-nuevo");
@@ -327,18 +347,63 @@ class AuthServiceTest {
         assertThat(response.user().fullName()).isEqualTo("Juan David Angeles Medina");
         assertThat(response.user().email()).isEqualTo("juandavid151199@gmail.com");
 
-        verify(refreshTokenService).validateAndRotate("refresh-token-viejo");
+        verify(refreshTokenService).validateAndRotate(oldRefreshToken);
         verify(refreshTokenService).createRefreshToken(fakeUser);
+    }
+
+    @Test
+    void failedRefreshTokenWhenTokenIsNull() {
+
+        Throwable error =
+                catchThrowable(() -> authService.refreshToken(null));
+
+        assertThat(error)
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Refresh token inválido");
+
+        verify(refreshTokenService, never()).validateAndRotate(anyString());
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
+    }
+
+    @Test
+    void failedRefreshTokenWhenTokenIsBlank() {
+
+        Throwable error =
+                catchThrowable(() -> authService.refreshToken("   "));
+
+        assertThat(error)
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Refresh token inválido");
+
+        verify(refreshTokenService, never()).validateAndRotate(anyString());
+        verify(refreshTokenService, never()).createRefreshToken(any(User.class));
+        verify(jwtService, never()).generateToken(any(SecurityUser.class));
     }
 
     @Test
     void logout() {
 
-        RefreshTokenRequestDto request =
-                new RefreshTokenRequestDto("refresh-token");
+        String refreshToken = "refresh-token";
 
-        authService.logout(request);
+        authService.logout(refreshToken);
 
-        verify(refreshTokenService).revoke("refresh-token");
+        verify(refreshTokenService).revoke(refreshToken);
+    }
+
+    @Test
+    void logoutDoesNothingWhenRefreshTokenIsNull() {
+
+        authService.logout(null);
+
+        verify(refreshTokenService, never()).revoke(anyString());
+    }
+
+    @Test
+    void logoutDoesNothingWhenRefreshTokenIsBlank() {
+
+        authService.logout("   ");
+
+        verify(refreshTokenService, never()).revoke(anyString());
     }
 }

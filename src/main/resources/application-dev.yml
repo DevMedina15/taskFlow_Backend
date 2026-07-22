@@ -43,6 +43,8 @@ spring:
 
 api:
   security:
+    cookie:
+      secure: false
     jwt:
       secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION}

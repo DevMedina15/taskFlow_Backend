@@ -1,9 +1,11 @@
 package com.taskflow.api.security.filter;
 
+import com.taskflow.api.security.service.AuthCookieService;
 import com.taskflow.api.security.service.JwtService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
 
@@ -24,12 +27,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
-
 
     @Override
     protected void doFilterInternal(
@@ -38,22 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String jwt = extractJwtFromCookie(request);
 
-        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-
-        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+        if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String jwt = authHeader.substring(BEARER_PREFIX.length());
-
-        final String userEmail;
-
-        if (jwt.isBlank()) {
-            filterChain.doFilter(request, response);
-            return;
-        }
         try {
             authenticateRequest(jwt, request);
         } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
@@ -65,10 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     ex.getClass().getSimpleName()
             );
         }
+
         filterChain.doFilter(request, response);
     }
 
-    private void authenticateRequest (
+    private void authenticateRequest(
             String jwt,
             HttpServletRequest request
     ) {
@@ -82,7 +73,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(userEmail);
 
         if (!jwtService.isTokenValid(jwt, userDetails)) {
             return;
@@ -96,10 +88,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
 
         authToken.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(request)
+                new WebAuthenticationDetailsSource()
+                        .buildDetails(request)
         );
 
-        SecurityContextHolder.getContext().setAuthentication(authToken);
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(authToken);
+    }
 
+    private String extractJwtFromCookie(HttpServletRequest request) {
+        Cookie cookie = WebUtils.getCookie(
+                request,
+                AuthCookieService.ACCESS_TOKEN_COOKIE
+        );
+
+        return cookie == null ? null : cookie.getValue();
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -89,6 +90,18 @@ public class AuthController {
                         authCookieService.deleteRefreshTokenCookie().toString()
                 )
                 .build();
+    }
+
+    @GetMapping("/csrf")
+    public ResponseEntity<CsrfTokenResponseDto> csrfToken(
+            CsrfToken csrfToken
+    ) {
+        return ResponseEntity.ok(
+              new CsrfTokenResponseDto(
+                      csrfToken.getHeaderName(),
+                      csrfToken.getToken()
+              )
+        );
     }
 
     private ResponseEntity<AuthResponseDto> authenticatedResponse(

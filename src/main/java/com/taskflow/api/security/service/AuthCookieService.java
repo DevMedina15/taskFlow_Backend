@@ -5,6 +5,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 
 @Service
 public class AuthCookieService {
@@ -46,24 +47,34 @@ public class AuthCookieService {
                 .build();
     }
 
-    public ResponseCookie deleteAccessTokenCookie() {
-        return ResponseCookie.from(ACCESS_TOKEN_COOKIE, "")
+    public ResponseCookie deleteCookie(String name, String path) {
+        return ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite("Lax")
-                .path("/api")
+                .path(path)
                 .maxAge(Duration.ZERO)
                 .build();
     }
 
+    public ResponseCookie deleteAccessTokenCookie() {
+        return deleteCookie(ACCESS_TOKEN_COOKIE, "/api");
+    }
+
     public ResponseCookie deleteRefreshTokenCookie() {
-        return ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
-                .httpOnly(true)
-                .secure(secure)
-                .sameSite("Lax")
-                .path("/api/v1/auth")
-                .maxAge(Duration.ZERO)
-                .build();
+        return deleteCookie(REFRESH_TOKEN_COOKIE, "/api/v1/auth");
+    }
+
+    public List<ResponseCookie> deleteAuthCookies() {
+        return List.of(
+                deleteCookie(ACCESS_TOKEN_COOKIE, "/api"),
+                deleteCookie(ACCESS_TOKEN_COOKIE, "/"),
+                deleteCookie(ACCESS_TOKEN_COOKIE, "/api/v1/auth"),
+
+                deleteCookie(REFRESH_TOKEN_COOKIE, "/api/v1/auth"),
+                deleteCookie(REFRESH_TOKEN_COOKIE, "/api"),
+                deleteCookie(REFRESH_TOKEN_COOKIE, "/")
+        );
     }
 
 

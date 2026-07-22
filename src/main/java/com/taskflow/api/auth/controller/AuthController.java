@@ -80,16 +80,17 @@ public class AuthController {
     ) {
         authService.logout(refreshToken);
 
-        return ResponseEntity.noContent()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        authCookieService.deleteAccessTokenCookie().toString()
-                )
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        authCookieService.deleteRefreshTokenCookie().toString()
-                )
-                .build();
+        ResponseEntity.BodyBuilder response = (ResponseEntity.BodyBuilder) ResponseEntity.noContent();
+
+        authCookieService.deleteAuthCookies()
+                .forEach(cookie ->
+                        response.header(
+                                HttpHeaders.SET_COOKIE,
+                                cookie.toString()
+                        )
+                );
+
+        return response.build();
     }
 
     @GetMapping("/csrf")

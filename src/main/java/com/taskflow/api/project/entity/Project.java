@@ -25,6 +25,13 @@ public class Project extends BaseEntity {
     @Column(name = "organization_name", length = 50 ,nullable = false)
     private String organizationName;
 
+    @Column(name = "project_key", length = 5)
+    private String projectKey;
+
+    @Column(name = "current_task_sequence", nullable = false)
+    @Builder.Default
+    private Integer currentSequenceTask = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     @Builder.Default

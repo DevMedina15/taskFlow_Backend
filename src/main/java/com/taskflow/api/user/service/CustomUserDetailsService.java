@@ -1,7 +1,7 @@
 package com.taskflow.api.user.service;
 
 import com.taskflow.api.security.model.SecurityUser;
-import com.taskflow.api.user.UserRepository;
+import com.taskflow.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;

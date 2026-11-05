@@ -11,6 +11,7 @@ public record ProjectResponseDto(
         String name,
         String description,
         String organizationName,
+        String projectKey,
         ProjectStatus status,
         LocalDateTime createdAt
 ) {

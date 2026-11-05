@@ -1,0 +1,7 @@
+ALTER TABLE task_members DROP CONSTRAINT task_members_pkey;
+
+ALTER TABLE task_members
+    ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD CONSTRAINT unique_task_user UNIQUE (task_id, user_id);

@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "project_members")
+@Table(name = "project_members", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"project_id", "user_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,8 +27,5 @@ public class ProjectMember extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ProjectRole role;
-
-
-
 
 }

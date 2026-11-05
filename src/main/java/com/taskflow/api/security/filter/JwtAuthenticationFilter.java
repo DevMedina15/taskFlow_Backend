@@ -1,22 +1,28 @@
 package com.taskflow.api.security.filter;
 
+import com.taskflow.api.security.service.AuthCookieService;
 import com.taskflow.api.security.service.JwtService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,47 +34,75 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+        String jwt = extractJwtFromCookie(request);
 
-        // 1. Validamos si vino la cabecera en el formato correcto
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 2. Extraemos el token (cortamos los primeros 7 caracteres: "Bearer ")
-        jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUserName(jwt);
+        try {
+            authenticateRequest(jwt, request);
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
+            SecurityContextHolder.clearContext();
 
-        // 3. Si el token tiene un correo y el usuario no está autenticado en este instante...
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            log.warn(
+                    "JWT invalido o expirado en {}. Motivo {}",
+                    request.getRequestURI(),
+                    ex.getClass().getSimpleName()
+            );
+        }
 
-            // Vamos a la BD a buscar al usuario
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+        filterChain.doFilter(request, response);
+    }
 
-            // 4. Si el token es legítimo y no ha caducado...
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+    private void authenticateRequest(
+            String jwt,
+            HttpServletRequest request
+    ) {
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            return;
+        }
 
-                // 5. Creamos el pase de entrada oficial de Spring Security
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+        String userEmail = jwtService.extractUserName(jwt);
+
+        if (userEmail == null || userEmail.isBlank()) {
+            return;
+        }
+
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(userEmail);
+
+        if (!jwtService.isTokenValid(jwt, userDetails)) {
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
                         userDetails.getAuthorities()
                 );
 
-                // Le agregamos detalles extra como la IP de la petición
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        authToken.setDetails(
+                new WebAuthenticationDetailsSource()
+                        .buildDetails(request)
+        );
 
-                // 6. Guardamos al usuario en la "RAM temporal" de esta petición
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        }
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(authToken);
+    }
 
-        filterChain.doFilter(request, response);
+    private String extractJwtFromCookie(HttpServletRequest request) {
+        Cookie cookie = WebUtils.getCookie(
+                request,
+                AuthCookieService.ACCESS_TOKEN_COOKIE
+        );
+
+        return cookie == null ? null : cookie.getValue();
     }
 }

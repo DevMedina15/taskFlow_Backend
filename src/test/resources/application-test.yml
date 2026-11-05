@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:taskflow_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  flyway:
+    enabled: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        auto-startup: false
+      direct:
+        auto-startup: false
+
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: fake-google-client-id-for-testing
+
+api:
+  security:
+    jwt:
+      secret-key: clave-falsa-muy-larga-para-pruebas-unitarias-y-de-integracion-123456
+      expiration: 3600000
+    refresh-token:
+      expiration: 604800000

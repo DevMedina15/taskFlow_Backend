@@ -11,5 +11,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: taskflow-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    restart: unless-stopped
+
 volumes:
   postgres_data:

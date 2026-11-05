@@ -1,0 +1,7 @@
+ALTER TABLE projects
+    ADD COLUMN project_key VARCHAR(5) UNIQUE,
+    ADD COLUMN current_task_sequence INT NOT NULL DEFAULT 0;
+
+
+ALTER TABLE tasks
+    ADD COLUMN code VARCHAR(100) UNIQUE;
